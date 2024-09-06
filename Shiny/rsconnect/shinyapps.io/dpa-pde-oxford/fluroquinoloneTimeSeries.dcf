@@ -1,0 +1,12 @@
+name: fluroquinoloneTimeSeries
+title: fluroquinoloneTimeSeries
+username: dpa-pde-oxford
+account: dpa-pde-oxford
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 11222872
+bundleId: 8401367
+url: https://dpa-pde-oxford.shinyapps.io/fluroquinoloneTimeSeries/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE

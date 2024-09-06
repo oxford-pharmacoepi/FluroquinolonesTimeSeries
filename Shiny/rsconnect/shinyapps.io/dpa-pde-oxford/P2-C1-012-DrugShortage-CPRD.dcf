@@ -1,0 +1,12 @@
+name: P2-C1-012-DrugShortage-CPRD
+title: P2-C1-012-DrugShortage-CPRD
+username: dpa-pde-oxford
+account: dpa-pde-oxford
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 11156312
+bundleId: 8247850
+url: https://dpa-pde-oxford.shinyapps.io/P2-C1-012-DrugShortage-CPRD/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE

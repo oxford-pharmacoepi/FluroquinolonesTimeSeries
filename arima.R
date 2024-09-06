@@ -59,9 +59,6 @@ fit_and_save_arima <- function(x, cdm_name) {
   ))
 
 
-  # model_arima <- auto.arima(ts_x, seasonal=TRUE, xreg=cbind(step, ramp),
-  #                           max.d=1, max.D=1, stepwise=FALSE, trace=TRUE)
-
   model_arima <- auto.arima(ts_x,
     seasonal = TRUE, xreg = cbind(step, ramp),
     max.p = 15, max.q = 15,
@@ -111,8 +108,8 @@ fit_and_save_arima <- function(x, cdm_name) {
     Model = "With Intervention"
   )
   names(coef_df_with_intrv)[2:5] <- c("Estimate", "Std. Error", "Statistics", "P-value")
-
-  # Assuming 'model_arima_nointrv' is your fitted model for 'Without intervention'
+  
+  # Coefficients for model without intervention
   coef_test_results_without_intrv <- matrix(coeftest(model_arima_nointrv), ncol = 4)
   coef_df_without_intrv <- data.frame(
     Parameter = row.names(coeftest(model_arima_nointrv)),
@@ -132,10 +129,9 @@ fit_and_save_arima <- function(x, cdm_name) {
   fitted_nointrv <- fitted(model_arima_nointrv)
   res_se <- sd(resid(model_arima_nointrv))
   res_se_x <- sd(resid(model_arima_nointrv))
-  # Assuming a 95% confidence interval
+  # 95% confidence interval
   alpha <- 0.05
   z_value <- qnorm(1 - alpha / 2)
-  # Calculate the confidence intervals
   low_b <- fitted(model_arima_nointrv) - z_value * res_se
   up_b <- fitted(model_arima_nointrv) + z_value * res_se
 
@@ -148,13 +144,13 @@ fit_and_save_arima <- function(x, cdm_name) {
   end_date <- start_date %m+% months(length(fitted_nointrv) + length(forecast_nointrv$mean) - 1) # Adjust for the total length
   date_sequence <- seq(start_date, end_date, by = "month")
 
-  # Step 2: Combine the series (fitted and forecasted values)
+  # Combine the series (fitted and forecasted values)
   combined_series <- c(fitted_nointrv, forecast_nointrv$mean)
   combined_95_lower <- c(low_b, forecast_nointrv$lower[, "95%"])
   combined_95_upper <- c(up_b, forecast_nointrv$upper[, "95%"])
 
 
-  # Step 3: Create a Data Frame
+  # Create a Data Frame
   pred_nointrv <- data.frame(
     Date = date_sequence,
     Forecast = combined_series* 100000/x$person_years,
@@ -165,7 +161,7 @@ fit_and_save_arima <- function(x, cdm_name) {
 
   fitted_intrv <- fitted(model_arima)
   res_se_intrv <- sd(resid(model_arima))
-  # Assuming a 95% confidence interval
+  # 95% confidence interval
   alpha <- 0.05
   z_value <- qnorm(1 - alpha / 2)
   # Calculate the confidence intervals
@@ -187,6 +183,7 @@ fit_and_save_arima <- function(x, cdm_name) {
 
 
   model_res_arima <- residuals(model_arima)
+  
   # Create and save ARIMA fitted, validated and predicted plot
   png_filename <- paste0("Diag/ARIMA_diag_", cdm_name, "_", age_group, ".png")
   png(png_filename)
@@ -245,6 +242,7 @@ process_function <- function(name, list_element) {
   # Call the analysis function
   fit_and_save_arima(data_subset, name)
 }
+
 # Setup parallel processing
 cl1 <- makeCluster(detectCores() - 1)
 clusterExport(cl1, varlist = c("fit_and_save_arima", "data_young_tagged", "process_function"), envir = environment())

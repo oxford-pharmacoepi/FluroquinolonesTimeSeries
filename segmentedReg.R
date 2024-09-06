@@ -30,17 +30,13 @@ fit_and_save_segreg <- function(x, cdm_name){
 
   x$time <- 1:dim(x)[1]
 
-  step <- as.numeric(x$incidence_start_date>=as.Date("2019-04-01"))
-  #
-  # ramp <- append(rep(0,sum(step == 0)), seq(1,sum(step != 0),1))
 
-  # x$time <- 1:dim(x)[1]
+  # previous models tested
   # model <- glm(n_events ~ offset(log(person_years)) + intervention_2015 +
   #                intrv*time + quarter4, family=quasipoisson, data=x)
 
 
-  # Model with intervention
-
+  # Model with lagged term, spline, intervention and intervention*time
   model_with_intrv <- glm(n_events_sum ~ offset(log(person_years_sum)) + lag(n_events_sum) +
                             intrv*time, family=quasipoisson, data=x)
   model_with_intrv <- update(model_with_intrv, . ~ . + pbs(as.numeric(x$quarter), df=4))
@@ -51,8 +47,7 @@ fit_and_save_segreg <- function(x, cdm_name){
   model_without_intrv <- glm(n_events_sum ~ offset(log(person_years_sum)) + lag(n_events_sum) +
                                time + pbs(as.numeric(quarter), df=4), family=quasipoisson, data=x_without_intrv)
 
-  # Model with only step and slope
-
+  # Test for simpler model: Model with only intervention and intervention*time
   model_simple <- glm(n_events_sum ~ offset(log(person_years_sum)) + intrv*time, family=quasipoisson, data=x)
   # Calculate the critical value for the 95% confidence interval
   critical_value <- qnorm(0.975)
@@ -153,84 +148,6 @@ fit_and_save_segreg <- function(x, cdm_name){
 
   # Save this dataframe
   save(residuals_data, file = paste0("residuals_with_dates_", cdm_name, "_", age_group, ".RData"))
-#
-#   png_qq <- paste0("qq_", unique(x$cdm_name), "_", age_group, ".png")
-#
-#
-#   if (any(residuals != 0)) {
-#     png(png_qq)
-#     par(mfrow = c(1, 1))
-#     qqnorm(residuals, main = paste0("Q-Q Plot of ARIMA Residuals ", unique(x$cdm_name)))
-#     qqline(residuals)
-#     dev.off() # Close the device
-#   }
-#
-#   standardized_res <- scale(residuals)
-#
-#   sp <- paste0("scatterplot_", unique(x$cdm_name), "_", age_group, ".png")
-#   png(sp)
-#   print(
-#     ggplot(data.frame(Time = x$incidence_start_date, Residuals = as.vector(c(NA,standardized_res))), aes(x = Time, y = Residuals)) +
-#       geom_point() +
-#       geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
-#       labs(title = "Time vs. Standardized Residuals", x = "Time", y = "Standardized Residuals")
-#   )
-#   dev.off()
-#
-
-  # pred <- predict(model,type="response")
-  # pred <- as.list(pred)
-  # pred$`1` <- NA
-  # pred <- pred[order(as.numeric(names(pred)))]
-  # pred <- unlist(pred)
-  #
-  # x$pred <- pred
-  # model_dispersion <- summary(model)$dispersion
-  # model_estimates <- round(ci.lin(model,Exp=TRUE),4)
-  # model_intrv<-model_estimates["intrv",5:7]
-  # model_trend<-exp(coef(model)["time"]*12)
-  # model_res <- residuals(model,type="deviance")
-
-
-  # bg_test <- bgtest(model, order = 8, order.by = NULL, data=x, type = "Chisq")
-  #
-#
-#   par(mfrow=c(1,2), oma=c(1,0,2,0))
-#   plot(x=x$incidence_start_date,
-#        y=x$n_events,
-#        xlab="months", ylab="IR")
-#
-#   title(paste(unique(x$cdm_name)), outer = FALSE)
-#   plot(1:(dim(x)[1]-1),model_res,ylim=c(-5,10),pch=19,cex=0.7,col=grey(0.6),
-#        ylab="Deviance residuals",xlab="Date")
-#   abline(h=0,lty=2,lwd=2)
-#
-#   par(mfrow=c(1,2), oma=c(0,0,2,0))
-#   png_diag <- paste0("Diag/SegReg_diag_", unique(x$outcome_cohort_name), ".png")
-#   png(png_diag)
-#   acf(model_res, main="")
-#   pacf(model_res, main="")
-#   title(paste(unique("Segmented regression", x$cdm_name)), outer = TRUE)
-#   dev.off()
-
-
-  # par(mfrow=c(1,1))
-  # x$ir <- x$n_events * 100000/x$person_years
-
-  # plot(x$ir,type="n",ylim=c(0,max(x$pred, na.rm = TRUE)+300), xlab="Quarter",ylab="Incidence Rate",
-  #      bty="l",xaxt="n")
-  #
-  # rect(length(step==0),0,length(step),max(x$pred, na.rm = TRUE)+300,col=grey(0.9),border=F)
-  # points(x$ir,cex=0.7)
-  #
-  # axis(1,at=1:length(step),labels=unique(x$incidence_start_date))
-  #
-  # lines((1:length(step)), x$pred,col=4)
-  # # lines((1:length(step)), x$pred_arima,col=8)
-  #
-  # title(paste0(unique(x$cdm_name), paste0(" Estimated Incidence Rate Fluroquinolones ", min(year(x$incidence_start_date))," - 2021")))
-  #
-  # dev.off()
 
 
 
@@ -336,53 +253,3 @@ parLapply(cl2, names(data_old_tagged_segreg), function(name) {
 })
 # Clean up
 stopCluster(cl2)
-
-plot_combined_residuals <- function(directory_path, x) {
-  # List all files that start with 'residuals' and end with '.RData'
-  files <- list.files(path = directory_path, pattern = "^residuals.*\\.RData$", full.names = TRUE)
-
-  # Initialize lists to store loaded data
-  all_residuals <- list()
-  all_dates <- list()
-  labels <- list()
-
-  # Load data from each file
-  for (file in files) {
-    load(file)  # Assuming each file loads a 'residuals' variable
-    all_residuals[[length(all_residuals) + 1]] <- residuals
-    labels[[length(labels) + 1]] <- gsub("residuals_|\\.RData", "", basename(file))
-  }
-
-  # Prepare a vector that repeats each label according to the length of each residuals list
-  repeated_labels <- unlist(mapply(rep, labels, times = sapply(all_residuals, length)))
-
-  # Flatten the list of all_residuals to create a single vector of residuals
-  all_residuals_vector <- unlist(all_residuals)
-
-  # Combine all residuals and labels into a data frame for plotting
-  combined_data <- data.frame(
-    Residuals = unlist(all_residuals),
-    Group = repeated_labels
-  )
-
-  # Scatter Plot
-  png("combined_scatter_plot.png", width = 800, height = 400)
-  ggplot(combined_data, aes(x = Date, y = Residuals, color = Group)) +
-    geom_point() +
-    geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
-    labs(title = "Time vs. Standardized Residuals", x = "Time", y = "Standardized Residuals") +
-    theme(legend.title = element_blank())
-  dev.off()
-
-  # QQ Plot - comparing first two groups as an example
-  if(length(all_residuals) >= 2) {
-    png("combined_qq_plot.png", width = 800, height = 400)
-    qqplot(all_residuals[[1]], all_residuals[[2]], main = "Q-Q Plot of Residuals",
-           xlab = labels[[1]], ylab = labels[[2]], col = c("blue", "red"))
-    qqline(all_residuals[[1]], col = "darkgray")
-    dev.off()
-  }
-}
-
-# Example call to the function
-# plot_combined_residuals(directory_path = "path/to/your/residuals")

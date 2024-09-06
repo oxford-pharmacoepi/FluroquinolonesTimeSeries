@@ -1,0 +1,12 @@
+name: toyExample
+title: toyExample
+username: mimimimiguo
+account: mimimimiguo
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 11168271
+bundleId: 8233601
+url: https://mimimimiguo.shinyapps.io/toyExample/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
